@@ -1,24 +1,18 @@
 package com.odebar.junit.service;
 
 import com.odebar.junit.dto.User;
+import com.odebar.junit.paramresolver.UserServiceParamResolver;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.collection.IsMapContaining;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.*;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
@@ -30,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("user")
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.DisplayName.class)
+@ExtendWith({UserServiceParamResolver.class})
 class UserServiceTest {
 
     private static final User IVAN = User.of(1, "Ivan", "123");
@@ -40,21 +35,25 @@ class UserServiceTest {
 
     private UserService userService;
 
+    UserServiceTest(TestInfo testInfo) {
+        System.out.println();
+    }
+
     @BeforeAll
     void init() {
         System.out.println("Before all: " + this);
     }
 
     @BeforeEach
-    void prepare() {
+    void prepare(UserService userService) {
         System.out.println("Before each: " + this);
-        userService = new UserService();
+        this.userService = userService;
     }
 
     @Test
     @Order(1)
     @DisplayName("users will be empty if no user added")
-    void usersEmptyIfNoUserAdded() {
+    void usersEmptyIfNoUserAdded(UserService userService) {
         System.out.println("Test 1: " + this);
         var users = userService.getAll();
 
@@ -146,5 +145,28 @@ class UserServiceTest {
                     () -> assertThrows(IllegalArgumentException.class, () -> userService.login("dummy", null))
             );
         }
+
+        @ParameterizedTest
+        //@ArgumentsSource()
+//        @NullSource
+//        @EmptySource
+        //@NullAndEmptySource
+        //@ValueSource
+        @MethodSource("com.odebar.junit.service.UserServiceTest#getArgumentForLoginTest")
+        void loginParametrizedTest(String username, String password, Optional<User> user) {
+          userService.add(IVAN,PETR);
+
+            Optional<User> maybeUser = userService.login(username, password);
+            assertThat(maybeUser).isEqualTo(user);
+        }
+    }
+
+    static Stream<Arguments> getArgumentForLoginTest(){
+        return  Stream.of(
+                Arguments.of("Ivan","123",Optional.of(IVAN)),
+                Arguments.of("Petr","111",Optional.of(PETR)),
+                Arguments.of("Petr","dummy",Optional.of(IVAN)),
+                Arguments.of("dummy","123",Optional.of(IVAN))
+        );
     }
 }
