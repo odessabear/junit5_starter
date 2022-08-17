@@ -1,7 +1,7 @@
 package com.odebar.junit.service;
 
 import com.odebar.junit.dto.User;
-import com.odebar.junit.paramresolver.UserServiceParamResolver;
+import com.odebar.junit.extension.*;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.collection.IsMapContaining;
 import org.junit.jupiter.api.*;
@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -24,7 +25,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("user")
 @TestInstance(Lifecycle.PER_CLASS)
 @TestMethodOrder(MethodOrderer.DisplayName.class)
-@ExtendWith({UserServiceParamResolver.class})
+@ExtendWith({
+        UserServiceParamResolver.class,
+        GlobalExtension.class,
+        PostProcessingExtension.class,
+        ConditionalExtension.class,
+        ThrowableExtension.class})
 class UserServiceTest {
 
     private static final User IVAN = User.of(1, "Ivan", "123");
@@ -53,7 +59,10 @@ class UserServiceTest {
     @Test
     @Order(1)
     @DisplayName("users will be empty if no user added")
-    void usersEmptyIfNoUserAdded(UserService userService) {
+    void usersEmptyIfNoUserAdded(UserService userService) throws IOException {
+        if (true){
+            throw new RuntimeException();
+        }
         System.out.println("Test 1: " + this);
         var users = userService.getAll();
 
@@ -104,6 +113,7 @@ class UserServiceTest {
     class LoginTest {
 
         @Test
+        @Disabled("flaky, need to see")
         void loginFailIfPasswordIsNotCorrect() {
             userService.add(IVAN);
 
@@ -154,19 +164,19 @@ class UserServiceTest {
         //@ValueSource
         @MethodSource("com.odebar.junit.service.UserServiceTest#getArgumentForLoginTest")
         void loginParametrizedTest(String username, String password, Optional<User> user) {
-          userService.add(IVAN,PETR);
+            userService.add(IVAN, PETR);
 
             Optional<User> maybeUser = userService.login(username, password);
             assertThat(maybeUser).isEqualTo(user);
         }
     }
 
-    static Stream<Arguments> getArgumentForLoginTest(){
-        return  Stream.of(
-                Arguments.of("Ivan","123",Optional.of(IVAN)),
-                Arguments.of("Petr","111",Optional.of(PETR)),
-                Arguments.of("Petr","dummy",Optional.of(IVAN)),
-                Arguments.of("dummy","123",Optional.of(IVAN))
+    static Stream<Arguments> getArgumentForLoginTest() {
+        return Stream.of(
+                Arguments.of("Ivan", "123", Optional.of(IVAN)),
+                Arguments.of("Petr", "111", Optional.of(PETR))
+//                Arguments.of("Petr", "dummy", Optional.of(IVAN)),
+//                Arguments.of("dummy", "123", Optional.of(IVAN))
         );
     }
 }

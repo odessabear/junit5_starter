@@ -1,4 +1,4 @@
-package com.odebar.junit.paramresolver;
+package com.odebar.junit.extension;
 
 import com.odebar.junit.service.UserService;
 import org.junit.jupiter.api.extension.ExtensionContext;
