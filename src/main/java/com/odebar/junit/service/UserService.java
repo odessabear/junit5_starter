@@ -1,5 +1,6 @@
 package com.odebar.junit.service;
 
+import com.odebar.junit.dao.UserDao;
 import com.odebar.junit.dto.User;
 
 import java.util.*;
@@ -9,6 +10,15 @@ import java.util.stream.Collectors;
 public class UserService {
 
     private final List<User> users = new ArrayList<>();
+    private final UserDao userDao;
+
+    public UserService(UserDao userDao) {
+        this.userDao = userDao;
+    }
+
+    public boolean delete(Integer userId) {
+        return userDao.delete(userId);
+    }
 
     public List<User> getAll() {
         return users;
@@ -19,7 +29,7 @@ public class UserService {
     }
 
     public Optional<User> login(String username, String password) {
-        if (username == null || password == null){
+        if (username == null || password == null) {
             throw new IllegalArgumentException("username or password is null");
         }
         return users.stream()
